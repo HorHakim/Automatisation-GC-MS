@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automatisation GC-MS — Horairy Consulting × Flashlab</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0D1117;color:#C9D1D9}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;display:flex;flex-direction:column}
+#slide-area{flex:1;overflow:auto;position:relative}
+.slide{width:100%;min-height:100%;display:flex;flex-direction:column;position:relative;opacity:0;transform:translateY(12px);transition:opacity .45s ease,transform .45s ease}
+.slide.visible{opacity:1;transform:translateY(0)}
+.slide-content{background:linear-gradient(160deg,#0D1117 0%,#161B22 50%,#0D1117 100%);padding:clamp(24px,5vw,48px) clamp(24px,5vw,56px);justify-content:center;flex:1;display:flex;flex-direction:column}
+.slide-cover{background:linear-gradient(160deg,#0D1117 0%,#161B22 40%,#1A2332 100%);justify-content:center;align-items:center;text-align:center;overflow:hidden;flex:1;display:flex;flex-direction:column;position:relative}
+.grid-bg::before{content:'';position:absolute;inset:0;opacity:.04;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px);background-size:60px 60px}
+.serif{font-family:'DM Serif Display',Georgia,serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+h1.serif{font-size:clamp(2rem,5vw,3.5rem);font-weight:400;color:#F0F6FC;letter-spacing:-.02em;line-height:1.15}
+h2.serif{font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:400;color:#F0F6FC;letter-spacing:-.01em;margin-bottom:8px}
+.subtitle{font-size:15px;color:#8B949E;line-height:1.5;margin-top:8px}
+.section-header{margin-bottom:20px}
+.card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:24px 22px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card-flex{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.card-col{flex:1 1 260px;max-width:380px}
+.accent-gold{color:#E8A838}.accent-blue{color:#4A90D9}
+.border-gold{border-color:rgba(232,168,56,.33);border-top:3px solid #E8A838}
+.border-blue{border-color:rgba(74,144,217,.33);border-top:3px solid #4A90D9}
+.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;display:inline-block}
+.dot-gold{background:#E8A838}.dot-blue{background:#4A90D9}.dot-green{background:#3FB950}
+.row-item{font-size:14px;color:#C9D1D9;padding:7px 0;display:flex;align-items:center;gap:10px}
+.row-item:not(:last-child){border-bottom:1px solid rgba(255,255,255,.05)}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:5px 12px;border-radius:20px;white-space:nowrap}
+.badge-done{background:rgba(63,185,80,.13);color:#3FB950}
+.badge-planned{background:rgba(232,168,56,.13);color:#E8A838}
+.label{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.callout{margin-top:20px;background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.15);border-radius:10px;padding:16px 22px;font-size:14px;color:#E8A838;line-height:1.6;font-style:italic}
+.deal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:20px}
+.deal-card{background:rgba(232,168,56,.06);border:1px solid rgba(232,168,56,.12);border-radius:8px;padding:14px 18px;text-align:center}
+.phase-card{border-left:3px solid;padding:24px 22px}
+#nav-bar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-top:1px solid rgba(255,255,255,.06);background:#0D1117;flex-shrink:0}
+.nav-btn{background:none;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#C9D1D9;cursor:pointer;display:flex;align-items:center;padding:8px 16px;font-family:'IBM Plex Sans',system-ui;font-size:13px;transition:border-color .2s,opacity .2s}
+.nav-btn:hover:not(:disabled){border-color:rgba(255,255,255,.25)}
+.nav-btn:disabled{opacity:.2;cursor:default}
+.nav-btn svg{width:20px;height:20px}
+#dots{display:flex;gap:6px;align-items:center}
+.dot-nav{height:8px;border-radius:4px;border:none;cursor:pointer;padding:0;background:rgba(255,255,255,.12);transition:all .3s ease;width:8px}
+.dot-nav.active{width:24px;background:#E8A838}
+.slide.visible .stagger{opacity:1;transform:translateY(0) scale(1) translateX(0)}
+.stagger{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.stagger.from-left{transform:translateX(-20px)}.stagger.from-right{transform:translateX(20px)}.stagger.pop{transform:scale(.92)}
+.d1{transition-delay:.15s}.d2{transition-delay:.22s}.d3{transition-delay:.29s}
+.d4{transition-delay:.36s}.d5{transition-delay:.43s}.d6{transition-delay:.50s}
+.d7{transition-delay:.57s}.d8{transition-delay:.64s}.d9{transition-delay:.71s}
+.arrow-circle{position:absolute;top:55%;left:50%;transform:translate(-50%,-50%);background:#161B22;border:1px solid rgba(255,255,255,.1);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;z-index:2;font-size:18px;color:#E8A838}
+.step-num{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8A838;background:rgba(232,168,56,.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
+.accent-line{width:80px;height:3px;background:#E8A838;border-radius:2px;margin:0 auto 32px}
+.accent-line-sm{width:60px;height:2px;background:#E8A838;border-radius:1px;margin:0 auto 20px}
+@media(max-width:600px){.arrow-circle{display:none}.card-col{max-width:100%}}
+</style>
+</head>
+<body>
+<div id="slide-area"></div>
+<div id="nav-bar">
+  <button class="nav-btn" id="btn-prev"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l-6 6 6 6"/></svg><span style="margin-left:6px">Pr&eacute;c&eacute;dent</span></button>
+  <div id="dots"></div>
+  <button class="nav-btn" id="btn-next"><span style="margin-right:6px">Suivant</span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l6 6-6 6"/></svg></button>
+</div>
+<script>
+var SLIDES=[];
+
+SLIDES[0]=function(){return '<div class="slide slide-cover grid-bg" id="s"><div class="accent-line stagger d2"></div><h1 class="serif stagger d3">Automatisation GC-MS</h1><p class="subtitle stagger d4" style="max-width:600px;margin:20px auto 0;font-size:clamp(0.95rem,2vw,1.2rem)">D\u2019un outil de calibration \u00e0 une solution SaaS pour les laboratoires</p><div style="position:absolute;bottom:40px;left:0;right:0;text-align:center" class="mono stagger d6"><span style="font-size:13px;color:#484F58;letter-spacing:0.04em">Proposition de partenariat \u2014 Flashlab \u00d7 Horairy Consulting</span></div></div>';};
+
+SLIDES[1]=function(){
+  var items=[
+    ["\ud83d\udd2c","Le projet aujourd\u2019hui","Ce qui a \u00e9t\u00e9 construit et livr\u00e9"],
+    ["\u26a1","La valeur cr\u00e9\u00e9e","Au-del\u00e0 de la mission initiale"],
+    ["\ud83c\udf0d","L\u2019opportunit\u00e9 march\u00e9","Pourquoi \u00e7a int\u00e9resse d\u2019autres labos"],
+    ["\ud83e\udd1d","Le partenariat","R\u00f4les, mod\u00e8le \u00e9conomique, PI"],
+    ["\ud83c\udfd7\ufe0f","Feuille de route technique","Architecture, multi-tenant, h\u00e9bergement"],
+    ["\ud83d\udd12","Conformit\u00e9 & s\u00e9curit\u00e9","Isolation des donn\u00e9es clients"]
+  ];
+  var h='<div class="slide slide-content" id="s"><div class="section-header"><h2 class="serif stagger d1">Ordre du jour</h2></div><div class="card-grid" style="margin-top:8px">';
+  for(var i=0;i<items.length;i++){
+    h+='<div class="card stagger d'+(i+2)+'" style="display:flex;gap:16px;align-items:flex-start;padding:20px 22px;border-radius:10px"><span style="font-size:26px;flex-shrink:0">'+items[i][0]+'</span><div><div style="font-weight:600;font-size:15px;color:#F0F6FC">'+items[i][1]+'</div><div style="font-size:13px;color:#8B949E;margin-top:4px;line-height:1.5">'+items[i][2]+'</div></div></div>';
+  }
+  h+='</div></div>';return h;
+};
+
+SLIDES[2]=function(){
+  var left=["Extraction donn\u00e9es brutes GC-MS","Envoi au serveur via API","R\u00e9int\u00e9gration des r\u00e9sultats"];
+  var right=["Calcul des temps de r\u00e9tention","V\u00e9rification ions quanti/quali","Mapping \u00e9talons internes deut\u00e9r\u00e9s","Calcul des concentrations","Tra\u00e7abilit\u00e9 compl\u00e8te"];
+  var h='<div class="slide slide-content" id="s" style="position:relative"><div class="section-header"><h2 class="serif stagger d1">Ce que j\u2019ai construit</h2><p class="subtitle stagger d2">Une architecture client-serveur pens\u00e9e pour l\u2019extensibilit\u00e9</p></div><div class="card-flex" style="margin-top:8px;align-items:stretch"><div class="card card-col border-blue stagger from-left d3"><div class="label accent-blue">Script l\u00e9ger</div><div class="serif" style="font-size:22px;color:#F0F6FC;margin-bottom:4px">Client MassHunter</div><div class="mono" style="font-size:11px;color:#484F58;margin-bottom:16px">IronPython 2.7 \u00b7 SDK Agilent</div>';
+  for(var i=0;i<left.length;i++) h+='<div class="row-item"><span class="dot dot-blue"></span>'+left[i]+'</div>';
+  h+='</div><div class="card card-col border-gold stagger from-right d4"><div class="label accent-gold">Intelligence m\u00e9tier</div><div class="serif" style="font-size:22px;color:#F0F6FC;margin-bottom:4px">Serveur FastAPI</div><div class="mono" style="font-size:11px;color:#484F58;margin-bottom:16px">Python 3 \u00b7 FastAPI</div>';
+  for(var i=0;i<right.length;i++) h+='<div class="row-item"><span class="dot dot-gold"></span>'+right[i]+'</div>';
+  h+='</div></div><div class="arrow-circle stagger d6">\u21c4</div></div>';return h;
+};
+
+SLIDES[3]=function(){
+  var bef=["Calibration 16 HAP","Script sp\u00e9cifique MassHunter","Usage unique Flashlab"];
+  var aft=["N\u2019importe quel compos\u00e9 configurable","Fichier Excel de m\u00e9tadonn\u00e9es suffit","Architecture extensible multi-logiciel","Applicable \u00e0 tout laboratoire GC-MS"];
+  var h='<div class="slide slide-content" id="s"><div class="section-header"><h2 class="serif stagger d1">Au-del\u00e0 des 16 HAP</h2><p class="subtitle stagger d2">Un outil g\u00e9n\u00e9rique, pas un script sur-mesure</p></div><div class="card-flex"><div class="card card-col stagger d3" style="background:rgba(255,255,255,.02)"><div class="label" style="color:#8B949E;margin-bottom:16px">Mission initiale</div>';
+  for(var i=0;i<bef.length;i++) h+='<div class="row-item"><span style="color:#484F58;font-size:12px">\u2014</span>'+bef[i]+'</div>';
+  h+='</div><div class="card card-col stagger d4" style="background:rgba(232,168,56,.06);border-color:rgba(232,168,56,.2)"><div class="label accent-gold" style="margin-bottom:16px">Ce qui peut \u00eatre livr\u00e9</div>';
+  for(var i=0;i<aft.length;i++) h+='<div class="row-item"><span class="accent-gold" style="font-size:12px">\u2713</span>'+aft[i]+'</div>';
+  h+='</div></div><div class="callout stagger d6">\ud83d\udca1 Un simple fichier Excel permet de configurer la calibration pour n\u2019importe quel compos\u00e9 \u2014 noms, types, ions, mapping \u00e9talons deut\u00e9r\u00e9s.</div></div>';return h;
+};
+
+SLIDES[4]=function(){
+  var pts=[
+    ["\u23f1\ufe0f","Chronophage","La calibration manuelle prend des heures de travail qualifi\u00e9 \u00e0 chaque campagne d\u2019analyse."],
+    ["\u26a0\ufe0f","Source d\u2019erreurs","Les saisies manuelles et v\u00e9rifications humaines introduisent des risques d\u2019erreur significatifs."],
+    ["\ud83c\udf93","Expertise requise","N\u00e9cessite une connaissance pointue de la chimie analytique et du logiciel de chromatographie."],
+    ["\ud83c\udfed","March\u00e9 large","Tout laboratoire faisant de la GC-MS en France est un client potentiel."]
+  ];
+  var h='<div class="slide slide-content" id="s"><div class="section-header"><h2 class="serif stagger d1">L\u2019opportunit\u00e9 march\u00e9</h2></div><div class="card-grid" style="gap:18px">';
+  for(var i=0;i<pts.length;i++){
+    h+='<div class="card stagger pop d'+(i+2)+'" style="text-align:center;padding:28px 24px"><div style="font-size:36px;margin-bottom:14px">'+pts[i][0]+'</div><div class="serif" style="font-size:18px;color:#F0F6FC;margin-bottom:8px">'+pts[i][1]+'</div><div style="font-size:13px;color:#8B949E;line-height:1.6">'+pts[i][2]+'</div></div>';
+  }
+  h+='</div></div>';return h;
+};
+
+SLIDES[5]=function(){
+  var tL=["Maintenance du logiciel","\u00c9volutions & nouvelles fonctionnalit\u00e9s","Support technique de niveau 2","Adaptation \u00e0 d\u2019autres logiciels chromatographie"];
+  var tR=["Distribution via le r\u00e9seau du groupe","Prospection aupr\u00e8s de labos non-concurrents","Support client de niveau 1","H\u00e9bergement potentiel via LeDev"];
+  var deals=[["Mod\u00e8le","SaaS \u2014 licence au nombre d\u2019\u00e9chantillons / mois"],["Royalties","50 / 50"],["PI","Propri\u00e9t\u00e9 intellectuelle partag\u00e9e 50 / 50"],["\u00c0 d\u00e9finir","R\u00e9partition des co\u00fbts (h\u00e9bergement, support)"]];
+  var h='<div class="slide slide-content" id="s"><div class="section-header"><h2 class="serif stagger d1">Le partenariat propos\u00e9</h2></div><div class="card-flex"><div class="card card-col border-gold stagger d2"><div class="serif" style="font-size:20px;color:#F0F6FC;margin-bottom:16px">Horairy Consulting</div>';
+  for(var i=0;i<tL.length;i++) h+='<div class="row-item"><span class="dot dot-gold"></span>'+tL[i]+'</div>';
+  h+='</div><div class="card card-col border-blue stagger d3"><div class="serif" style="font-size:20px;color:#F0F6FC;margin-bottom:16px">Flashlab / LeDev</div>';
+  for(var i=0;i<tR.length;i++) h+='<div class="row-item"><span class="dot dot-blue"></span>'+tR[i]+'</div>';
+  h+='</div></div><div class="deal-grid stagger d5">';
+  for(var i=0;i<deals.length;i++) h+='<div class="deal-card"><div class="mono" style="font-size:10px;color:#8B949E;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+deals[i][0]+'</div><div style="font-size:15px;color:#E8A838;font-weight:600">'+deals[i][1]+'</div></div>';
+  h+='</div></div>';return h;
+};
+
+SLIDES[6]=function(){
+  var phases=[
+    ["now","#3FB950","Phase actuelle","Beta \u2014 Local",["Serveur local chez Flashlab","Client MassHunter op\u00e9rationnel","Livraison dans les prochains jours"]],
+    ["next","#E8A838","Phase 2","SaaS mono-client",["H\u00e9bergement serveur (LeDev / OVH)","Authentification & API s\u00e9curis\u00e9e","Dashboard de suivi"]],
+    ["future","#4A90D9","Phase 3","SaaS multi-tenant",["Architecture multi-clients isol\u00e9e","Front-end web (drag & drop donn\u00e9es brutes)","Clients adapt\u00e9s pour autres logiciels"]]
+  ];
+  var h='<div class="slide slide-content" id="s"><div class="section-header"><h2 class="serif stagger d1">Feuille de route technique</h2></div><div class="card-flex">';
+  for(var p=0;p<phases.length;p++){
+    var ph=phases[p];
+    var glow=ph[0]==='now'?'box-shadow:0 0 8px '+ph[1]+'66':'';
+    h+='<div class="card card-col phase-card stagger from-left d'+(p+2)+'" style="border-left-color:'+ph[1]+';flex:1 1 220px;max-width:320px"><div class="label" style="color:'+ph[1]+';display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:'+ph[1]+';display:inline-block;'+glow+'"></span>'+ph[2]+'</div><div class="serif" style="font-size:18px;color:#F0F6FC;margin-bottom:14px">'+ph[3]+'</div>';
+    for(var i=0;i<ph[4].length;i++){
+      var bb=i<ph[4].length-1?'border-bottom:1px solid rgba(255,255,255,.04)':'';
+      h+='<div style="font-size:13px;color:#C9D1D9;padding:6px 0;'+bb+'">'+ph[4][i]+'</div>';
+    }
+    h+='</div>';
+  }
+  h+='</div></div>';return h;
+};
+
+SLIDES[7]=function(){
+  var opts=[
+    ["\ud83d\udda5\ufe0f","MassHunter (Agilent)","Client IronPython existant \u2014 pr\u00eat \u00e0 l\u2019emploi","done"],
+    ["\ud83c\udf10","Front-end web","Glisser-d\u00e9poser les donn\u00e9es brutes \u2014 aucun logiciel requis","planned"],
+    ["\ud83d\udd0c","Autres logiciels chromatographie","D\u00e9veloppement de clients adapt\u00e9s \u2014 rapide gr\u00e2ce \u00e0 l\u2019API standardis\u00e9e","planned"]
+  ];
+  var h='<div class="slide slide-content" id="s"><div class="section-header"><h2 class="serif stagger d1">Compatibilit\u00e9 multi-logiciel</h2><p class="subtitle stagger d2">Le serveur est autonome \u2014 le client est interchangeable</p></div><div style="display:flex;flex-direction:column;gap:14px;max-width:600px;margin:0 auto">';
+  for(var i=0;i<opts.length;i++){
+    var o=opts[i];
+    var bc=o[3]==='done'?'badge-done':'badge-planned';
+    var bl=o[3]==='done'?'Op\u00e9rationnel':'Pr\u00e9vu';
+    h+='<div class="card stagger from-left d'+(i+3)+'" style="display:flex;gap:20px;align-items:center;padding:22px 26px"><span style="font-size:32px;flex-shrink:0">'+o[0]+'</span><div style="flex:1"><div style="font-weight:600;font-size:16px;color:#F0F6FC">'+o[1]+'</div><div style="font-size:13px;color:#8B949E;margin-top:4px;line-height:1.5">'+o[2]+'</div></div><span class="badge '+bc+'">'+bl+'</span></div>';
+  }
+  h+='</div></div>';return h;
+};
+
+SLIDES[8]=function(){
+  var topics=[
+    ["\ud83d\udd10","Isolation des donn\u00e9es","Chaque laboratoire client ne voit que ses propres donn\u00e9es. Architecture multi-tenant avec s\u00e9paration stricte."],
+    ["\ud83c\uddeb\ud83c\uddf7","H\u00e9bergement souverain","H\u00e9bergement en France (OVH / infrastructure LeDev) pour garantir la conformit\u00e9 RGPD."],
+    ["\ud83d\udccb","Tra\u00e7abilit\u00e9","Chaque op\u00e9ration est journalis\u00e9e \u2014 audit trail complet pour les accr\u00e9ditations laboratoire."],
+    ["\ud83d\udd11","Authentification","API s\u00e9curis\u00e9e, tokens par client, chiffrement des communications (TLS)."]
+  ];
+  var h='<div class="slide slide-content" id="s"><div class="section-header"><h2 class="serif stagger d1">Conformit\u00e9 & s\u00e9curit\u00e9</h2><p class="subtitle stagger d2">Questions cl\u00e9s pour le passage multi-tenant</p></div><div class="card-grid" style="gap:16px">';
+  for(var i=0;i<topics.length;i++){
+    var t=topics[i];
+    h+='<div class="card stagger d'+(i+2)+'"><span style="font-size:30px;display:block;margin-bottom:12px">'+t[0]+'</span><div style="font-weight:600;font-size:16px;color:#F0F6FC;margin-bottom:8px">'+t[1]+'</div><div style="font-size:13px;color:#8B949E;line-height:1.6">'+t[2]+'</div></div>';
+  }
+  h+='</div></div>';return h;
+};
+
+SLIDES[9]=function(){
+  var steps=["Valider la vision partenariat et le principe du 50/50","Finaliser la clause de propri\u00e9t\u00e9 intellectuelle du contrat en cours","D\u00e9finir le p\u00e9rim\u00e8tre technique de la Phase 2 (h\u00e9bergement, auth, multi-tenant)","Identifier les premiers laboratoires cibles pour un pilote"];
+  var h='<div class="slide slide-cover grid-bg" id="s"><div class="section-header" style="text-align:center"><h2 class="serif stagger d1">Prochaines \u00e9tapes</h2></div><div style="display:flex;flex-direction:column;gap:14px;max-width:520px;margin:8px auto 32px">';
+  for(var i=0;i<steps.length;i++){
+    h+='<div style="display:flex;gap:16px;align-items:flex-start;text-align:left" class="stagger from-left d'+(i+2)+'"><span class="step-num">'+(i+1)+'</span><span style="font-size:15px;color:#C9D1D9;line-height:1.6;padding-top:4px">'+steps[i]+'</span></div>';
+  }
+  h+='</div><div class="accent-line-sm stagger d7"></div><p class="serif stagger d8" style="font-size:clamp(1.05rem,2.5vw,1.4rem);color:#F0F6FC;max-width:560px;line-height:1.55;margin:0 auto;text-align:center;padding:0 20px">La distribution pourra d\u00e9marrer une fois l\u2019outil \u00e9prouv\u00e9 par les \u00e9quipes de Flashlab \u2014 objectif d\u00e9but automne 2026.</p></div>';
+  return h;
+};
+
+var current=0;
+var area=document.getElementById('slide-area');
+var dots=document.getElementById('dots');
+var btnPrev=document.getElementById('btn-prev');
+var btnNext=document.getElementById('btn-next');
+
+for(var i=0;i<SLIDES.length;i++){
+  var d=document.createElement('button');
+  d.className='dot-nav'+(i===0?' active':'');
+  d.setAttribute('data-i',i);
+  d.onclick=function(){go(parseInt(this.getAttribute('data-i')));};
+  dots.appendChild(d);
+}
+
+btnPrev.onclick=function(){go(current-1);};
+btnNext.onclick=function(){go(current+1);};
+
+function render(){
+  area.innerHTML=SLIDES[current]();
+  var allDots=dots.querySelectorAll('.dot-nav');
+  for(var i=0;i<allDots.length;i++) allDots[i].className='dot-nav'+(i===current?' active':'');
+  btnPrev.disabled=current===0;
+  btnNext.disabled=current===SLIDES.length-1;
+  requestAnimationFrame(function(){
+    var s=document.getElementById('s');
+    if(s) s.classList.add('visible');
+  });
+}
+
+function go(idx){
+  if(idx<0||idx>=SLIDES.length||idx===current) return;
+  var s=document.getElementById('s');
+  if(s){s.style.opacity='0';s.style.transform='translateY(-8px)';}
+  setTimeout(function(){current=idx;render();},250);
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();go(current+1);}
+  if(e.key==='ArrowLeft'){e.preventDefault();go(current-1);}
+});
+
+render();
+</script>
+</body>
+</html>
